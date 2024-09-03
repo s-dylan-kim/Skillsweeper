@@ -1,0 +1,7 @@
+.minesweeper-tile {
+    background-color: grey;
+    aspect-ratio: 1 / 1;
+    /* min-width: 10px; */
+    margin: 5px;
+    flex: 0 1 calc(10% - 10px);
+}

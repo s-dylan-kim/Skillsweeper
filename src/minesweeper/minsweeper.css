@@ -1,0 +1,8 @@
+#minesweeper-board {
+    width: 40%;
+    max-width: 500px;
+    background-color: blanchedalmond;
+    display: flex;
+    flex-flow: row wrap;
+    position: relative;
+}
