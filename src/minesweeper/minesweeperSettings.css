@@ -1,0 +1,31 @@
+#minesweeper-settings {
+    margin: 25px auto auto;
+    padding: 20px;
+    background-color: navajowhite;
+    border-radius: 15px;
+    box-shadow: 5px 5px 5px 5px burlywood;
+    width: 80%;
+    max-width: 500px;
+
+    display:flex;
+    flex-flow: column nowrap;
+}
+
+.minesweeper-setting-input {
+    text-align: center;
+    width: 100%; 
+    box-sizing: border-box; /* https://stackoverflow.com/questions/6891445/why-does-an-input-width-of-100-always-overrun-the-containing-div */
+    -webkit-box-sizing:border-box; /* some magic to make 100% actually 100% */
+    -moz-box-sizing: border-box;
+}
+
+.minesweeper-setting-row {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+}
+
+.minesweeper-setting-info {
+    padding: 5px 5px 5px 5px;
+    flex: 1 1 20%;
+}

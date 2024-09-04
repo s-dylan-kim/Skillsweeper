@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from "react";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCircleInfo } from '@fortawesome/free-solid-svg-icons'
 
 import { TileState, TileProps } from "./tileTypes.ts";
 import MinesweeperTile from "./minesweeperTile.tsx";
 import Modal from "./modal.tsx"
+import MinesweeperSettings from "./minesweeperSettings.tsx";
+import { BOARDHEIGHT, BOARDWIDTH, NUMBOMBS, MINIMUMEMPTYTILES, BOMBVALUE } from "../constants.tsx"
 import "./minsweeper.css";
 
-const BOARDHEIGHT = 16;
-const BOARDWIDTH = 16;
-const NUMBOMBS = 40;
-const BOMBVALUE = -1;
-const MAXBOARDHEIGHT = 32;
-const MAXBOARDWIDTH = 32;
-const MINIMUMEMPTYTILES = 9;
+
 
 export default function Minesweeper() : JSX.Element {
     const [board, setBoard] = useState<TileProps[][]>([]);
@@ -30,94 +28,40 @@ export default function Minesweeper() : JSX.Element {
     }, []);
 
     useEffect(() => {
+        if (numBombs > boardWidth * boardHeight - MINIMUMEMPTYTILES) setNumBombs(Math.max(0, boardWidth * boardHeight - MINIMUMEMPTYTILES));
+        if (numBombs < 0) setNumBombs(0);
         resetGame();
     }, [numBombs, boardWidth, boardHeight])
+
+    // check for win using hook to avoid race condition
+    useEffect(() => {
+        if (revealedCount + numBombs >= boardHeight * boardWidth) {
+            setGameWon(true);
+            setShowModal(true);
+        }
+    }, [revealedCount])
 
     return (
         <>
             <Modal showModal={showModal} gameWon={gameWon} revealedCount={revealedCount} totalTiles={boardWidth * boardHeight - numBombs} showHelp={showHelp} buttonOnClick={showHelp ? () => setShowModal(false) : () => resetGame()}/>
 
             <div id="minesweeper-wrapper">
-                <div id="minesweeper-board" onContextMenu={(e) => e.preventDefault()}> {/* prevent accidental right clicks between cells */}
-                    {board.map((tilerows, row) => {
-                        return (
-                            <div key={-row} className="minesweeper-board-row">
-                                {tilerows.map((tileprops, col) => <MinesweeperTile key={row * boardWidth + col} {...tileprops} onClick={() => handleTileClick(row, col)} onContextMenu={(e) => handleRightClick(e, row, col)}/>)}
-                            </div>
-                        )                        
-                    })}
-                </div>
-                <div id="minesweeper-settings">
-                    <div className="minesweeper-setting-row">
-                        <div className="minesweeper-setting-info">
-                            Bombs Left:
-                        </div>
-                        <div className="minesweeper-setting-info">
-                            Tiles Left:
-                        </div>
-                        <div className="minesweeper-setting-info">
-                            Board Width:
-                        </div>
-                        <div className="minesweeper-setting-info">
-                            Board Height:
-                        </div>
-                        <div className="minesweeper-setting-info">
-                            Bomb Count:
-                        </div>
+                <div id="minesweeper-wrapper-content-center">
+                    <div id="minesweeper-title-card">
+                        <b>Skillsweeper</b>
+                        <FontAwesomeIcon icon={faCircleInfo} id="minesweeper-info-button" onClick={() => {setShowHelp(true); setShowModal(true);}}/>
                     </div>
-                    <div className="minesweeper-setting-row">
-                        <div className="minesweeper-setting-info">
-                            {numBombs - flagCount}
-                        </div>
-                        <div className="minesweeper-setting-info">
-                            {boardWidth * boardHeight - numBombs - revealedCount}
-                        </div>
-                        <div className="minesweeper-setting-info">
-                            <input
-                                className="minesweeper-setting-input"
-                                value = {boardWidth}
-                                onChange= {
-                                    e => {
-                                        if (!isNaN(+e.target.value)) {
-                                            let newWidth = Math.floor(+e.target.value);
-                                            if (+e.target.value > MAXBOARDWIDTH) newWidth = MAXBOARDWIDTH;
-                                            setBoardWidth(newWidth);
-                                        }
-                                    }
-                                }
-                            />
-                        </div>
-                        <div className="minesweeper-setting-info">
-                            <input
-                                className="minesweeper-setting-input"
-                                value = {boardHeight}
-                                onChange= {
-                                    e => {
-                                        if (!isNaN(+e.target.value)) {
-                                            let newHeight = Math.floor(+e.target.value);
-                                            if (+e.target.value > MAXBOARDHEIGHT) newHeight = MAXBOARDHEIGHT;
-                                            setBoardHeight(newHeight);
-                                        }
-                                    }
-                                }
-                            />
-                        </div>
-                        <div className="minesweeper-setting-info">
-                            <input
-                                className="minesweeper-setting-input"
-                                value = {numBombs}
-                                onChange= {
-                                    e => {
-                                        if (!isNaN(+e.target.value)) {
-                                            let newBombs = Math.floor(+e.target.value);
-                                            if (+e.target.value > boardWidth * boardHeight - 9) newBombs = boardWidth * boardHeight - MINIMUMEMPTYTILES;
-                                            setNumBombs(newBombs);
-                                        }
-                                    }
-                                }
-                            />
-                        </div>
+                    <div id="minesweeper-board" onContextMenu={(e) => e.preventDefault()}> {/* prevent accidental right clicks between cells */}
+                        {board.map((tilerows, row) => {
+                            return (
+                                <div key={-row} className="minesweeper-board-row">
+                                    {tilerows.map((tileprops, col) => <MinesweeperTile key={row * boardWidth + col} {...tileprops} onClick={() => handleTileClick(row, col)} onContextMenu={(e) => handleRightClick(e, row, col)}/>)}
+                                </div>
+                            )                        
+                        })}
                     </div>
+
+                    <MinesweeperSettings numBombs={numBombs} flagCount={flagCount} boardHeight={boardHeight} boardWidth={boardWidth} revealedCount={revealedCount} setBoardWidth={setBoardWidth} setBoardHeight={setBoardHeight} setNumBombs={setNumBombs}/>
                 </div>
             </div>
         </>
@@ -175,13 +119,6 @@ export default function Minesweeper() : JSX.Element {
 
         revealTile(boardCopy, row, col);
 
-        // check for win
-        if (revealedCount + numBombs === boardWidth * boardHeight) {
-            setGameWon(true);
-            setShowModal(true);
-            return;
-        }
-
         setBoard(boardCopy);
     }
 
@@ -191,6 +128,7 @@ export default function Minesweeper() : JSX.Element {
         setGameWon(false);
         setShowHelp(false);
         setRevealedCount(0);
+        setFlagCount(0);
         resetBoard();
     }
 

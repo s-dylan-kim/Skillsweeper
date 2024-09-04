@@ -1,3 +1,43 @@
+#minesweeper-title-card {
+    position: relative;
+    margin: 25px auto 60px auto;
+    padding: 20px;
+    background-color: navajowhite;
+    border-radius: 15px;
+    box-shadow: 5px 5px 5px 5px burlywood;
+    width: 80%;
+    height: 30%;
+    max-width: 500px;
+    font-size: 2.5em;
+}
+
+#minesweeper-info-button {
+    position: absolute;
+    right: 0.5em;
+    top: 50%;
+    transform: translate(0,-50%);
+}
+
+/* div centering magic */
+#minesweeper-wrapper { 
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100%;
+    
+    display: flex;
+    align-items: center;
+    flex-basis: column nowrap;
+    justify-content: center;
+    width: 100%;
+}
+
+#minesweeper-wrapper-content-center {
+    width: 100%;
+}
+
 #minesweeper-board {
     margin:auto;
     max-width: 80%;
@@ -13,36 +53,4 @@
     display: inline-flex;
     flex-flow: row nowrap;
     flex-basis: 100%;
-}
-
-#minesweeper-settings {
-    margin: 25px auto auto;
-    padding: 20px;
-    background-color: navajowhite;
-    border-radius: 15px;
-    box-shadow: 5px 5px 5px 5px burlywood;
-    width: 80%;
-    max-width: 500px;
-
-    display:flex;
-    flex-flow: column nowrap;
-}
-
-.minesweeper-setting-input {
-    text-align: center;
-    width: 100%; 
-    box-sizing: border-box; /* https://stackoverflow.com/questions/6891445/why-does-an-input-width-of-100-always-overrun-the-containing-div */
-    -webkit-box-sizing:border-box; /* some magic to make 100% actually 100% */
-    -moz-box-sizing: border-box;
-}
-
-.minesweeper-setting-row {
-    display: flex;
-    flex-flow: row no-wrap;
-    justify-content: center;
-}
-
-.minesweeper-setting-info {
-    padding: 5px 20px 5px 20px;
-    flex: 1 1 20%;
 }
