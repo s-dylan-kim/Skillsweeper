@@ -10,3 +10,9 @@ export type TileProps = {
     flagged: boolean,
     value: number // -1 for bomb, 0 - 8 for number displayed on tile
 }
+
+export type populateValidityStackInfo = {
+    row: number,
+    col: number,
+    val: number
+}

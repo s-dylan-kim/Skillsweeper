@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import { TileState, TileProps } from "./tileTypes.ts";
+import { TileState, TileProps } from "./minesweeperTypes.ts";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFlag, faBomb } from '@fortawesome/free-solid-svg-icons'
 import "./minesweeperTile.css";
