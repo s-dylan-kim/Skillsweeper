@@ -261,7 +261,7 @@ export default function Minesweeper() : JSX.Element {
             for (let row = 0; row < boardHeight; row++) {
                 bombTracker[row] = [];
                 tempBoard[row] = [];
-                safeTracker[row] = []
+                safeTracker[row] = [];
                 for (let col = 0; col < boardWidth; col++) {
                     bombTracker[row][col] = 0;
                     tempBoard[row][col] = UNPLACEDVAL;
@@ -357,13 +357,13 @@ export default function Minesweeper() : JSX.Element {
                     for (let i = 0; i < tempBoard.length; i++) tempCpy[i] = tempBoard[i].slice();
                     for (let copyRow = 0; copyRow < boardHeight; copyRow++) {
                         for (let copyCol = 0; copyCol < boardWidth; copyCol++) {
-                            bombTracker[copyRow][copyCol] += tempBoard[copyRow][copyCol] == BOMBVALUE ? 1 : 0;
-                            safeTracker[copyRow][copyCol] += tempBoard[copyRow][copyCol] == EMPTYVALUE ? 1 : 0;
+                            bombTracker[copyRow][copyCol] += (tempBoard[copyRow][copyCol] == BOMBVALUE ? 1 : 0);
+                            safeTracker[copyRow][copyCol] += (tempBoard[copyRow][copyCol] == 0 ? 1 : 0);
                         }
                     }
-                    console.log("FULL MATCH")
-                    console.log(tempCpy);
-                    console.log(JSON.stringify(visitedStack));
+                    // console.log("FULL MATCH")
+                    // console.log(tempCpy);
+                    // console.log(JSON.stringify(visitedStack));
                     totalConfigs++;
                 }
 
@@ -399,15 +399,18 @@ export default function Minesweeper() : JSX.Element {
                 for (let col = 0; col < boardWidth; col++) {
                     if (bombTracker[row][col] > 0) {
                         oddsBomb[row][col] = bombTracker[row][col] / totalConfigs;
-                        
+                    }
+                    if (safeTracker[row][col] > 0) {
+                        oddsSafe[row][col] = safeTracker[row][col] / totalConfigs;
                     }
                 }
             }
-            console.log(`total configs: ${totalConfigs}`)
+            // console.log(`total configs: ${totalConfigs}`)
         }
 
         let boardCopy = [...board];
-        console.log(oddsBomb);
+        // console.log(oddsBomb);
+        // console.log(oddsSafe);
         for (let row = 0; row < boardHeight; row++) {
             for (let col = 0; col < boardWidth; col++) {
                 if (oddsBomb[row][col] == 1) {
