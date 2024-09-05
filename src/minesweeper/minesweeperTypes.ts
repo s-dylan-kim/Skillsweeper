@@ -13,5 +13,5 @@ export type TileProps = {
 export type populateValidityStackInfo = {
     row: number,
     col: number,
-    val: number
+    val: number // -3 for unassigned, -1 for bomb, 0 - 8 for number displayed on tile
 }
