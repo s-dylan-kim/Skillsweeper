@@ -7,7 +7,8 @@ export enum TileState {
 export type TileProps = {
     revealed: boolean,
     flagged: boolean,
-    value: number // -1 for bomb, 0 - 8 for number displayed on tile
+    value: number, // -1 for bomb, 0 - 8 for number displayed on tile
+    highlight: number // 0 for nothing, 1 for red, 2 for green
 }
 
 export type populateValidityStackInfo = {

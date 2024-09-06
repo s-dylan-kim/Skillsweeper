@@ -8,6 +8,8 @@
     border-radius: 3px;
     box-shadow: 1px 1px 1px 1px dimgray;
 
+    font-weight: 900;
+
     /* stuff to center the text/image in div */
     display: flex;  
     justify-content: center;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCircleInfo } from '@fortawesome/free-solid-svg-icons'
 
@@ -6,7 +7,7 @@ import { TileState, TileProps, populateValidityStackInfo } from "./minesweeperTy
 import MinesweeperTile from "./minesweeperTile.tsx";
 import Modal from "./modal.tsx"
 import MinesweeperSettings from "./minesweeperSettings.tsx";
-import { BOARDHEIGHT, BOARDWIDTH, NUMBOMBS, MINIMUMEMPTYTILES, BOMBVALUE, EMPTYVALUE, UNPLACEDVAL } from "../constants.tsx"
+import { BOARDHEIGHT, BOARDWIDTH, NUMBOMBS, MINIMUMEMPTYTILES, BOMBVALUE, EMPTYVALUE, UNPLACEDVAL, HIGHLIGHTRED, HIGHLIGHTGREEN } from "../constants.tsx"
 import "./minsweeper.css";
 
 
@@ -19,8 +20,7 @@ export default function Minesweeper() : JSX.Element {
     const [revealedCount, setRevealedCount] = useState(0);
     const [flagCount, setFlagCount] = useState(0);
     const [showModal, setShowModal] = useState(false);
-    const [gameWon, setGameWon] = useState(false);
-    const [showHelp, setShowHelp] = useState(false);
+    const [gameOver, setGameOver] = useState(false);
     const [gameStarted, setGameStarted] = useState(false);
 
 
@@ -45,21 +45,23 @@ export default function Minesweeper() : JSX.Element {
      */
     useEffect(() => {
         if (revealedCount + numBombs >= boardHeight * boardWidth) {
-            setGameWon(true);
-            setShowModal(true);
+            setGameOver(true);
         }
     }, [revealedCount])
+
     return (
         <>
-            <Modal showModal={showModal} gameWon={gameWon} revealedCount={revealedCount} totalTiles={boardWidth * boardHeight - numBombs} showHelp={showHelp} buttonOnClick={showHelp ? () => setShowModal(false) : () => resetGame()}/>
-
+            <Modal showModal={showModal} buttonOnClick={() => setShowModal(false)}/>
+            {gameOver &&
+            <svg id="reset-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M463.5 224l8.5 0c13.3 0 24-10.7 24-24l0-128c0-9.7-5.8-18.5-14.8-22.2s-19.3-1.7-26.2 5.2L413.4 96.6c-87.6-86.5-228.7-86.2-315.8 1c-87.5 87.5-87.5 229.3 0 316.8s229.3 87.5 316.8 0c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0c-62.5 62.5-163.8 62.5-226.3 0s-62.5-163.8 0-226.3c62.2-62.2 162.7-62.5 225.3-1L327 183c-6.9 6.9-8.9 17.2-5.2 26.2s12.5 14.8 22.2 14.8l119.5 0z"/></svg>
+            }
             <div id="minesweeper-wrapper">
                 <div id="minesweeper-wrapper-content-center">
                     <div id="minesweeper-title-card">
                         <b>Skillsweeper</b>
-                        <FontAwesomeIcon icon={faCircleInfo} id="minesweeper-info-button" onClick={() => {console.log(board); setShowHelp(true); setShowModal(true);}}/>
+                        <FontAwesomeIcon icon={faCircleInfo} id="minesweeper-info-button" onClick={() => {setShowModal(true)}}/>
                     </div>
-                    <div id="minesweeper-board" onContextMenu={(e) => e.preventDefault()}> {/* prevent accidental right clicks between cells */}
+                    <div id="minesweeper-board" onClick={() => checkResetGame()} onContextMenu={(e) => e.preventDefault()}> {/* prevent accidental right clicks between cells */}
                         {board.map((tilerows, row) => {
                             return (
                                 <div key={-row} className="minesweeper-board-row">
@@ -116,6 +118,15 @@ export default function Minesweeper() : JSX.Element {
     }
 
     /**
+     * alternative onClick handler to just reset
+     */
+    function checkResetGame() {
+        if (gameOver) {
+            resetGame();
+        }
+    }
+
+    /**
      * Handles right clicks on tiles (placing/removing flags)
      * 
      * @param e - mouse right click event
@@ -124,6 +135,10 @@ export default function Minesweeper() : JSX.Element {
      */
     function handleRightClick(e: React.MouseEvent, row: number, col: number) : void {
         e.preventDefault(); // prevent right click menu from showing
+
+        // if game over, dont respond
+        if (gameOver) return;
+
         let boardCopy = [...board];
         setFlagCount(flagCount + (board[row][col].flagged ? -1 : 1));
 
@@ -140,12 +155,17 @@ export default function Minesweeper() : JSX.Element {
     function handleTileClick(row: number, col: number) : void {
         if (board[row][col].flagged) return; // dont allow flagged tile to be revealed
 
+        // if game over, restart game
+        if (gameOver) {
+            resetGame();
+            return;
+        }
+
         if (!gameStarted) {
             handleGameStart(row, col);
         }
 
         let { possibleBoards, dangerMap, safeExists } = populateValidity();
-        console.log(dangerMap);
 
         let boardCopy = [...board];
 
@@ -153,27 +173,37 @@ export default function Minesweeper() : JSX.Element {
             if (safeExists) {
                 // force loss
                 if (board[row][col].value !== BOMBVALUE) {
-                    changeBombLocations(possibleBoards, row, col, BOMBVALUE);
+                    boardCopy = changeBombLocations(possibleBoards, row, col, BOMBVALUE);
                 }
-                
-                boardCopy[row][col].revealed = true;
-                setBoard(boardCopy);
-                setGameWon(false);
-                setShowModal(true);
+                boardCopy[row][col].highlight = HIGHLIGHTRED;
+                boardCopy = highlightSafeGreen(boardCopy, dangerMap);
+                boardCopy = updateCellValues(boardCopy);
+                setBoard(revealAllBombs(boardCopy));
+                setGameOver(true);
                 return;
             } else {
                 // force safe tile
                 if (board[row][col].value === BOMBVALUE) {
-                    changeBombLocations(possibleBoards, row, col, EMPTYVALUE);
-                    updateCellValues();
+                    boardCopy = changeBombLocations(possibleBoards, row, col, EMPTYVALUE);
+                    boardCopy = updateCellValues(boardCopy);
                 }
             }
         }
 
+        if (dangerMap[row][col] === TileState.dangerous) {
+            boardCopy[row][col].highlight = HIGHLIGHTRED;
+            boardCopy = highlightSafeGreen(boardCopy, dangerMap);
+            boardCopy = updateCellValues(boardCopy);
+            setBoard(revealAllBombs(boardCopy));
+            setGameOver(true);
+            return;
+        }
+
+        
+
         revealTile(boardCopy, row, col);
 
         setBoard(boardCopy);
-        
     }
 
     /**
@@ -182,8 +212,7 @@ export default function Minesweeper() : JSX.Element {
     function resetGame(): void {
         setShowModal(false);
         setGameStarted(false);
-        setGameWon(false);
-        setShowHelp(false);
+        setGameOver(false);
         setRevealedCount(0);
         setFlagCount(0);
         resetBoard();
@@ -197,7 +226,7 @@ export default function Minesweeper() : JSX.Element {
         for (let i = 0; i < boardHeight; i++) {
             let initRow:TileProps[] = [];
             for (let j = 0; j < boardWidth; j++) {
-                initRow = [...initRow, {revealed: false, flagged: false, value: 0}];
+                initRow = [...initRow, {revealed: false, flagged: false, value: 0, highlight:0}];
             }
             initBoard = [...initBoard, initRow];
         }
@@ -229,16 +258,19 @@ export default function Minesweeper() : JSX.Element {
             }
         }
 
-        setBoard(boardCopy);
-        updateCellValues();
+        setBoard(updateCellValues(boardCopy));
         setGameStarted(true);
     }
 
     /**
      * Updates the number values in cells to reflect the number of mines adjacent to them
+     * 
+     * @param boardToChange - board in which values are being evaluated for
+     * 
+     * @returns board with all number 
      */
-    function updateCellValues() : void {
-        let boardCopy = [...board];
+    function updateCellValues(boardToChange: TileProps[][]) : TileProps[][] {
+        let boardCopy = [...boardToChange];
 
         for (let row = 0; row < boardHeight; row++) { // clear out all old number values
             for (let col = 0; col < boardWidth; col++) {
@@ -265,7 +297,7 @@ export default function Minesweeper() : JSX.Element {
             }
         }
 
-        setBoard(boardCopy);
+        return boardCopy
     }
 
     /**
@@ -450,7 +482,7 @@ export default function Minesweeper() : JSX.Element {
                     visitedStack.push({row, col, val});
 
                     // if there are still nodes to visit, we have not found a full match yet. Keep going!
-                    if (toVisit.length != 0) continue;
+                    if (toVisit.length !== 0) continue;
                      
                     // found a full match!
                     let deepCopy: number[][] = [];
@@ -458,8 +490,8 @@ export default function Minesweeper() : JSX.Element {
                         deepCopy[copyRow] = [];
                         for (let copyCol = 0; copyCol < boardWidth; copyCol++) {
                             deepCopy[copyRow][copyCol] = tempBoard[copyRow][copyCol];
-                            bombTracker[copyRow][copyCol] += (tempBoard[copyRow][copyCol] == BOMBVALUE ? 1 : 0);
-                            safeTracker[copyRow][copyCol] += (tempBoard[copyRow][copyCol] == 0 ? 1 : 0);
+                            bombTracker[copyRow][copyCol] += (tempBoard[copyRow][copyCol] === BOMBVALUE ? 1 : 0);
+                            safeTracker[copyRow][copyCol] += (tempBoard[copyRow][copyCol] === 0 ? 1 : 0);
                         }
                     }
 
@@ -469,7 +501,7 @@ export default function Minesweeper() : JSX.Element {
 
                 // teardown some of the path to try a new path as either we have found a valid path, or this path doesnt work
                 tempBoard[row][col] = UNPLACEDVAL; // reset this tile's value
-                if (val == BOMBVALUE) {
+                if (val === BOMBVALUE) {
                     inToVisit.add(flattenCoord(row, col)); // since bomb didnt work here, try empty
                     toVisit.push({row, col, val:0});
                 } else {
@@ -480,7 +512,7 @@ export default function Minesweeper() : JSX.Element {
                         let visitedVal = visitedStack.pop()
                         if (visitedVal) { // go back until we are trying empty instead of bomb. since we try bomb before empty, changing from empty->bomb doesnt intro a new combination
                             tempBoard[visitedVal.row][visitedVal.col] = UNPLACEDVAL; // remove value placed by that tile
-                            if (visitedVal.val == BOMBVALUE) { // add opposite value to stack: bomb->empty, empty->bomb
+                            if (visitedVal.val === BOMBVALUE) { // add opposite value to stack: bomb->empty, empty->bomb
                                 inToVisit.add(flattenCoord(visitedVal.row, visitedVal.col)); // add removed value to toVisit stack so we are sure to return to it
                                 toVisit.push({row: visitedVal.row, col: visitedVal.col, val: EMPTYVALUE});
                                 break;
@@ -491,7 +523,7 @@ export default function Minesweeper() : JSX.Element {
                         }
                     }
 
-                    if (visitedStack.length == 0 && toVisit[toVisit.length - 1].val == BOMBVALUE) break; // if we change the first node from empty->bomb, we have exhaused all combinations
+                    if (visitedStack.length === 0 && toVisit[toVisit.length - 1].val === BOMBVALUE) break; // if we change the first node from empty->bomb, we have exhaused all combinations
                 }
             }
 
@@ -520,10 +552,10 @@ export default function Minesweeper() : JSX.Element {
         for (let row = 0; row < boardHeight; row++) {
             dangerMap[row] = []
             for (let col = 0; col < boardWidth; col++) {
-                if (oddsBomb[row][col] == 1) { // if 100% bomb, guarenteed dangerous
+                if (oddsBomb[row][col] === 1) { // if 100% bomb, guarenteed dangerous
                     dangerMap[row][col] = TileState.dangerous;
                 }
-                else if (oddsSafe[row][col] == 1) { // if 100% safe, guarenteed safe
+                else if (oddsSafe[row][col] === 1) { // if 100% safe, guarenteed safe
                     dangerMap[row][col] = TileState.safe;
                     safeExists = true;
                 }
@@ -543,8 +575,10 @@ export default function Minesweeper() : JSX.Element {
      * @param rowForce - row of cell that is being forced to a value
      * @param colForce - col of cell that is being forced to a value
      * @param val - value that cell is being forced to
+     * 
+     * @returns a random board config with the required value placed on the forced tile
      */
-    function changeBombLocations (possibleBoards: number[][][][], rowForce: number, colForce: number, val: number) : void {
+    function changeBombLocations (possibleBoards: number[][][][], rowForce: number, colForce: number, val: number) : TileProps[][] {
         let bombsPlaced = 0;
         let newBoard:TileProps[][] = []
 
@@ -555,7 +589,7 @@ export default function Minesweeper() : JSX.Element {
         for (let row = 0; row < boardHeight; row++) {
             newBoard[row] = []
             for (let col = 0; col < boardWidth; col++) {
-                newBoard[row][col] = {revealed: board[row][col].revealed, flagged: board[row][col].flagged, value: 0};
+                newBoard[row][col] = {revealed: board[row][col].revealed, flagged: board[row][col].flagged, value: 0, highlight: board[row][col].highlight};
                 
                 if (!board[row][col].revealed) { // bombs can only be placed on unrevealed tiles
                     bombPlacableLocations.add(flattenCoord(row, col));
@@ -584,6 +618,13 @@ export default function Minesweeper() : JSX.Element {
             }
         }
 
+        if (newBoard[rowForce][colForce].value !== val) {
+            newBoard[rowForce][colForce].value = val;
+            if (val === BOMBVALUE) {
+                bombsPlaced++;
+            }
+        }
+
         // place any extra remaining bombs
         let bombPlacableLocationArray = [...bombPlacableLocations]
 
@@ -602,8 +643,43 @@ export default function Minesweeper() : JSX.Element {
             bombPlacableLocationArray.pop();
         }
 
+        console.log(newBoard)
+
         setBoard(newBoard);
-        return;
+        return newBoard;
+    }
+
+    /**
+     * Reveals all bombs on board
+     * 
+     * @param boardToChange - board in which all bombs are being revealed (destructive)
+     * 
+     * @returns - board with all bombs revealed
+     */
+    function revealAllBombs (boardToChange: TileProps[][]): TileProps[][] {
+        for (let row = 0; row < boardHeight; row++) {
+            for (let col = 0; col < boardWidth; col++) {
+                if (boardToChange[row][col].value === BOMBVALUE) boardToChange[row][col].revealed = true;
+            }
+        }
+        return boardToChange
+    }
+
+    /**
+     * changes the highlight of all safe tiles to green
+     * 
+     * @param boardToChange - board in which all safe tiles are being highlighted green (destructive)
+     * @param dangerMap - an array containing whether each tile is Tilestate.dangerous, Tilestate.safe, or Tilestate.unknown
+     * 
+     * @returns - board with all safe tiles highlighted green
+     */
+    function highlightSafeGreen (boardToChange: TileProps[][], dangerMap: TileState[][]): TileProps[][] {
+        for (let row = 0; row < boardHeight; row++) {
+            for (let col = 0; col < boardWidth; col++) {
+                if (dangerMap[row][col] === TileState.safe) boardToChange[row][col].highlight = HIGHLIGHTGREEN;
+            }
+        }
+        return boardToChange
     }
 }
   
