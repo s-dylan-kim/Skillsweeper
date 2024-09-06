@@ -1,5 +1,5 @@
 # Skillsweeper
-### Link: [https://s-dylan-kim.github.io/HSR-Warp-Calc/](https://s-dylan-kim.github.io/Skillsweeper/)
+### Link: https://s-dylan-kim.github.io/Skillsweeper/
 Minesweeper, but luck is never a factor
 
 ## Rules
