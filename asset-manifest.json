@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/skillsweeper/static/css/main.69827237.css",
-    "main.js": "/skillsweeper/static/js/main.67bc5966.js",
+    "main.css": "/skillsweeper/static/css/main.88e45574.css",
+    "main.js": "/skillsweeper/static/js/main.c3450e64.js",
     "static/js/453.b80bba2c.chunk.js": "/skillsweeper/static/js/453.b80bba2c.chunk.js",
     "index.html": "/skillsweeper/index.html",
-    "main.69827237.css.map": "/skillsweeper/static/css/main.69827237.css.map",
-    "main.67bc5966.js.map": "/skillsweeper/static/js/main.67bc5966.js.map",
+    "main.88e45574.css.map": "/skillsweeper/static/css/main.88e45574.css.map",
+    "main.c3450e64.js.map": "/skillsweeper/static/js/main.c3450e64.js.map",
     "453.b80bba2c.chunk.js.map": "/skillsweeper/static/js/453.b80bba2c.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.69827237.css",
-    "static/js/main.67bc5966.js"
+    "static/css/main.88e45574.css",
+    "static/js/main.c3450e64.js"
   ]
 }
