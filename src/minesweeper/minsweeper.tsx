@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCircleInfo } from '@fortawesome/free-solid-svg-icons'
 
-import { TileState, TileProps, populateValidityStackInfo } from "./minesweeperTypes.ts";
+import { TileState, TileProps, populateValidityStackInfo, configurationInfo } from "./minesweeperTypes.ts";
 import MinesweeperTile from "./minesweeperTile.tsx";
 import Modal from "./modal.tsx"
 import MinesweeperSettings from "./minesweeperSettings.tsx";
@@ -89,6 +89,16 @@ export default function Minesweeper() : JSX.Element {
     }
 
     /**
+     * Converts flattened coords to (row, col) coords coordinate system
+     * 
+     * @param idx - flattened coord
+     * @returns {row, col} unflattened coordinate
+     */
+    function unflattenCoord (idx: number) : {row: number, col:number} {
+        return {row: Math.floor(idx / boardWidth), col: idx % boardWidth};
+    }
+
+    /**
      * recursively reveal all tiles adjacent to a 0 tile
      * similar to DFS floodfill
      * 
@@ -153,7 +163,7 @@ export default function Minesweeper() : JSX.Element {
      * @param col - col of tile player clicked
      */
     function handleTileClick(row: number, col: number) : void {
-        if (board[row][col].flagged) return; // dont allow flagged tile to be revealed
+        if (board[row][col].flagged || board[row][col].revealed) return; // dont register clicks on already revealed tiles and flagged tiles
 
         // if game over, restart game
         if (gameOver) {
@@ -312,15 +322,15 @@ export default function Minesweeper() : JSX.Element {
      * if a valid solution is found with nothing left to visit, then a solution is found and backtrack to find more solutions
      * 
      * @returns possibleBoards - an array that returns possible configurations
-     *                           [group][configuration][row][col]
+     *                           [group][configuration]
      *                           each group is an independent set of tiles
-     *                           possibleBoards[group][i] stores configuration i for that group
-     *                           values within array are UNPLACEDVAL, EMPTYVAL, BOMBVAL
+     *                           possibleBoards[group][i] stores board configuration i for that group
+     *                           each element contrains board values within array as UNPLACEDVAL, EMPTYVAL, BOMBVAL and the number of bombs in that configuration
      * @returns dangerMap - returns an array containing whether each tile is Tilestate.dangerous, Tilestate.safe, or Tilestate.unknown
      * @returns safeExists - is there any guarenteed safe tile on the board
      */
-    function populateValidity () : {possibleBoards: number[][][][], dangerMap: TileState[][], safeExists: boolean} {
-        let possibleBoards: number[][][][] = [] // see return value in function documentation
+    function populateValidity () : {possibleBoards: configurationInfo[][], dangerMap: TileState[][], safeExists: boolean} {
+        let possibleBoards: configurationInfo[][] = [] // see return value in function documentation
 
         // arrays to store the chance of a given cell containing a bomb or being safe
         let oddsBomb: number[][] = []
@@ -334,9 +344,16 @@ export default function Minesweeper() : JSX.Element {
 
             }
         }
+
+        // the minimum/maximum number of total bombs possible on the edges (used for bomb counting solutions)
+        let minTotalBombs = 0;
+        let maxTotalBombs = 0;
         
         // set to store all tiles that need to be calculated
         let toValidate = new Set<number>(); // we have to use flattened indexes for set (row * boardWidth + col) since js Set cant do tuples
+
+        // set to store all internal tiles
+        let internalTiles = new Set<number>(); // we have to use flattened indexes for set (row * boardWidth + col) since js Set cant do tuples
         
         // add all unrevealed tiles adjacent to a revealed number tile
         for (let row = 0; row < boardHeight; row++) {
@@ -358,33 +375,30 @@ export default function Minesweeper() : JSX.Element {
                         }
                         if (found) break;
                     }
+                    if (!found) internalTiles.add(flattenCoord(row, col));
                 }
             }
         }
 
         while (toValidate.size > 0) { // make sure all nodes are calculated
             // possible boards for this edge
-            let possibleBoardsInConfig: number[][][] = []
+            let possibleBoardsInConfig: configurationInfo[] = []
 
             // track how many successful patterns were made
             let totalConfigs = 0;
-            
-            // track number of times bomb is at this location
-            let bombTracker: number[][] = [];
-            let safeTracker: number[][] = [];
+
+            // track the smallest/largest number of bombs possible for this group
+            let minBombs = -1; // -1 means unfound
+            let maxBombs = -1;
             
             // temp board to put bombs on
             let tempBoard: number[][] = [];
             
-            // initialize the 2d array variables
+            // initialize the temp board variables
             for (let row = 0; row < boardHeight; row++) {
-                bombTracker[row] = [];
                 tempBoard[row] = [];
-                safeTracker[row] = [];
                 for (let col = 0; col < boardWidth; col++) {
-                    bombTracker[row][col] = 0;
                     tempBoard[row][col] = UNPLACEDVAL; // initialize to unplaced values everywhere instead of empty
-                    safeTracker[row][col] = 0;
                 }
             }
 
@@ -395,8 +409,7 @@ export default function Minesweeper() : JSX.Element {
             
             // pick a random point to start with
             let startPoint = toValidate.values().next().value;
-            let startRow = Math.floor(startPoint / boardWidth);
-            let startCol = startPoint % boardWidth;
+            let {row: startRow, col: startCol} = unflattenCoord(startPoint);
             toVisit.push({row: startRow, col:startCol, val: BOMBVALUE});
             inToVisit.add(flattenCoord(startRow, startCol));
 
@@ -485,17 +498,25 @@ export default function Minesweeper() : JSX.Element {
                     if (toVisit.length !== 0) continue;
                      
                     // found a full match!
+
+                    //track the number of bombs in this config
+                    let curbombCount = 0;
+
                     let deepCopy: number[][] = [];
                     for (let copyRow = 0; copyRow < boardHeight; copyRow++) { // save this as a configuration
                         deepCopy[copyRow] = [];
                         for (let copyCol = 0; copyCol < boardWidth; copyCol++) {
                             deepCopy[copyRow][copyCol] = tempBoard[copyRow][copyCol];
-                            bombTracker[copyRow][copyCol] += (tempBoard[copyRow][copyCol] === BOMBVALUE ? 1 : 0);
-                            safeTracker[copyRow][copyCol] += (tempBoard[copyRow][copyCol] === 0 ? 1 : 0);
+                            if (tempBoard[copyRow][copyCol] === BOMBVALUE) {
+                                curbombCount++;
+                            }
                         }
                     }
 
-                    possibleBoardsInConfig.push(deepCopy);
+                    if (curbombCount > maxBombs) maxBombs = curbombCount;
+                    if (curbombCount === -1 || curbombCount < minBombs) minBombs = curbombCount
+
+                    possibleBoardsInConfig.push({board:deepCopy, bombCount:curbombCount});
                     totalConfigs++;
                 }
 
@@ -527,6 +548,61 @@ export default function Minesweeper() : JSX.Element {
                 }
             }
 
+            // keep track of minimum number of bombs
+            maxTotalBombs += maxBombs;
+            minTotalBombs += minBombs;
+
+            possibleBoards.push(possibleBoardsInConfig); // save this groups configuration arrays to final output array
+        }
+
+        // are internal tiles safe?
+        let internalSafe = false;
+
+        // case where internal tiles safe
+        if (minTotalBombs === numBombs) {
+            internalSafe = true;
+
+            // only smallest config with smalles bomb count is allowed
+            for (let group = 0; group < possibleBoards.length; group++) {
+                // keep track of smallest possible bomb count in config
+                let smallestBombCount = possibleBoards[group][0].bombCount;
+                for (let config = 0; config < possibleBoards[group].length; config++) {
+                    if (possibleBoards[group][config].bombCount < smallestBombCount) smallestBombCount = possibleBoards[group][config].bombCount;
+                }
+
+                // filter for config with smallest bomb count
+                let newConfigs = possibleBoards[group].filter((config) => {
+                    return config.bombCount === smallestBombCount;
+                })
+
+                possibleBoards[group] = newConfigs;
+            }
+        }
+
+        for (let group = 0; group < possibleBoards.length; group++) {
+            // track number of times bomb/safe is at this location
+            let bombTracker: number[][] = [];
+            let safeTracker: number[][] = [];
+
+            // initialize variabeles
+            for (let rowInit = 0; rowInit < boardHeight; rowInit++) {
+                bombTracker[rowInit] = [];
+                safeTracker[rowInit] = [];
+                for (let colInit = 0; colInit < boardWidth; colInit++) {
+                    bombTracker[rowInit][colInit] = 0;
+                    safeTracker[rowInit][colInit] = 0
+                }
+            } 
+            for (let config = 0; config < possibleBoards[group].length; config++) {
+                for (let row = 0; row < boardHeight; row++) {
+                    for (let col = 0; col < boardWidth; col++) {
+                        if (possibleBoards[group][config].board[row][col] === BOMBVALUE) bombTracker[row][col]++;
+                        if (possibleBoards[group][config].board[row][col] === EMPTYVALUE) safeTracker[row][col]++;
+                    }
+                }
+            }
+
+            let totalConfigs = possibleBoards[group].length;
             // update odds arrays
             // to get odds (number of times (bomb/safe) / total configurations)
             for (let row = 0; row < boardHeight; row++) {
@@ -539,15 +615,23 @@ export default function Minesweeper() : JSX.Element {
                     }
                 }
             }
-            possibleBoards.push(possibleBoardsInConfig); // save this groups configuration arrays to final output array
         }
-
+            
 
         // is there a guarenteed safe tile anywhere
         let safeExists = false;
 
         // a map that contains which tiles are guarenteed safe, guarenteed dangerous, or unknown
         let dangerMap: TileState[][] = [];
+
+        // make internal tiles safe if needed
+        if (internalSafe && internalTiles.size > 0) {
+            safeExists = true;
+            internalTiles.forEach((idx) => {
+                let {row: convertRow, col: convertCol} = unflattenCoord(idx);
+                dangerMap[convertRow][convertCol] = TileState.safe; 
+            })
+        }
 
         for (let row = 0; row < boardHeight; row++) {
             dangerMap[row] = []
@@ -578,7 +662,7 @@ export default function Minesweeper() : JSX.Element {
      * 
      * @returns a random board config with the required value placed on the forced tile
      */
-    function changeBombLocations (possibleBoards: number[][][][], rowForce: number, colForce: number, val: number) : TileProps[][] {
+    function changeBombLocations (possibleBoards: configurationInfo[][], rowForce: number, colForce: number, val: number) : TileProps[][] {
         let bombsPlaced = 0;
         let newBoard:TileProps[][] = []
 
@@ -598,8 +682,8 @@ export default function Minesweeper() : JSX.Element {
         }
 
         for (let group = 0; group < possibleBoards.length; group++) { // do each independent group separately
-            let filteredBoards = possibleBoards[group].filter((board) => { // get rid of any tiles that force the forced tile with the wrong value
-                return (board[rowForce][colForce] === val) || (board[rowForce][colForce] === UNPLACEDVAL)
+            let filteredBoards = possibleBoards[group].filter((config) => { // get rid of any tiles that force the forced tile with the wrong value
+                return (config.board[rowForce][colForce] === val) || (config.board[rowForce][colForce] === UNPLACEDVAL)
             })
 
             // get a random index to pick a random configuration within the possible configurations
@@ -607,10 +691,10 @@ export default function Minesweeper() : JSX.Element {
 
             for (let copyRow = 0; copyRow < boardHeight; copyRow++) { // copy the configuration to our new board
                 for (let copyCol = 0; copyCol < boardWidth; copyCol++) {
-                    if (filteredBoards[randomConfigIdx][copyRow][copyCol] !== UNPLACEDVAL) { // if the configuration had a definitive value for a cell, dont allow a bomb to be placed here
+                    if (filteredBoards[randomConfigIdx].board[copyRow][copyCol] !== UNPLACEDVAL) { // if the configuration had a definitive value for a cell, dont allow a bomb to be placed here
                         bombPlacableLocations.delete(flattenCoord(copyRow, copyCol));
                     }
-                    if (filteredBoards[randomConfigIdx][copyRow][copyCol] === BOMBVALUE) {  // if the configuration has a bomb here, bomb must be placed here
+                    if (filteredBoards[randomConfigIdx].board[copyRow][copyCol] === BOMBVALUE) {  // if the configuration has a bomb here, bomb must be placed here
                         newBoard[copyRow][copyCol].value = BOMBVALUE;
                         bombsPlaced++;
                     }
@@ -632,8 +716,7 @@ export default function Minesweeper() : JSX.Element {
             // pick random location among valid locations
             let randomIdx = Math.floor(Math.random() * bombPlacableLocationArray.length);
             let bombLocation = bombPlacableLocationArray[randomIdx];
-            let bombRow = Math.floor(bombLocation / boardWidth);
-            let bombCol = bombLocation % boardWidth;;
+            let {row:bombRow, col:bombCol} = unflattenCoord(bombLocation);
             
             // set location as bomb
             newBoard[bombRow][bombCol].value = BOMBVALUE;
@@ -645,7 +728,6 @@ export default function Minesweeper() : JSX.Element {
 
         console.log(newBoard)
 
-        setBoard(newBoard);
         return newBoard;
     }
 

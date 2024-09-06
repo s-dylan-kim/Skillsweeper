@@ -16,3 +16,8 @@ export type populateValidityStackInfo = {
     col: number,
     val: number // -3 for unassigned, -1 for bomb, 0 - 8 for number displayed on tile
 }
+
+export type configurationInfo = {
+    board: number[][],
+    bombCount: number
+}
