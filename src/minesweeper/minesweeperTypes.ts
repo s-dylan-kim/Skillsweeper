@@ -19,5 +19,5 @@ export type populateValidityStackInfo = {
 
 export type configurationInfo = {
     board: number[][],
-    bombCount: number
+    bombCount: number // store bomb count, to solve potential future edge cases
 }
