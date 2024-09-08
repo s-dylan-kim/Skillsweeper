@@ -27,6 +27,8 @@ export default function Modal({ showModal, buttonOnClick } : ModalProps) : JSX.E
                     <br/>
                     After a loss, all guarenteed safe tiles will be highlighted in green<br/>
                     <br/>
+                    WARNING: Program may hang with larger board sizes
+                    <br/>
                     Good Luck!
                 </p>
                 <button onClick={buttonOnClick} className="modal-button">

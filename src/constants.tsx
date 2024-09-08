@@ -6,6 +6,6 @@ export const EMPTYVALUE = 0;
 export const UNPLACEDVAL = -3;
 export const HIGHLIGHTRED = 1;
 export const HIGHLIGHTGREEN = 2;
-export const MAXBOARDHEIGHT = 32;
+export const MAXBOARDHEIGHT = 24;
 export const MAXBOARDWIDTH = 32;
 export const MINIMUMEMPTYTILES = 9;

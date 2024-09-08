@@ -1,7 +1,7 @@
 {
   "name": "skillsweeper",
-  "version": "0.1.0",
-  "homepage": "https://s-dylan-kim.github.io/skillsweeper",
+  "version": "0.2.0",
+  "homepage": "https://s-dylan-kim.github.io/Skillsweeper",
   "private": true,
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.6.0",
