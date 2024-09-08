@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/skillsweeper/static/css/main.eb7c0dac.css",
-    "main.js": "/skillsweeper/static/js/main.bc5d6c54.js",
-    "static/js/453.b80bba2c.chunk.js": "/skillsweeper/static/js/453.b80bba2c.chunk.js",
-    "index.html": "/skillsweeper/index.html",
-    "main.eb7c0dac.css.map": "/skillsweeper/static/css/main.eb7c0dac.css.map",
-    "main.bc5d6c54.js.map": "/skillsweeper/static/js/main.bc5d6c54.js.map",
-    "453.b80bba2c.chunk.js.map": "/skillsweeper/static/js/453.b80bba2c.chunk.js.map"
+    "main.css": "/Skillsweeper/static/css/main.eb7c0dac.css",
+    "main.js": "/Skillsweeper/static/js/main.b37586f7.js",
+    "static/js/453.b80bba2c.chunk.js": "/Skillsweeper/static/js/453.b80bba2c.chunk.js",
+    "index.html": "/Skillsweeper/index.html",
+    "main.eb7c0dac.css.map": "/Skillsweeper/static/css/main.eb7c0dac.css.map",
+    "main.b37586f7.js.map": "/Skillsweeper/static/js/main.b37586f7.js.map",
+    "453.b80bba2c.chunk.js.map": "/Skillsweeper/static/js/453.b80bba2c.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.eb7c0dac.css",
-    "static/js/main.bc5d6c54.js"
+    "static/js/main.b37586f7.js"
   ]
 }
